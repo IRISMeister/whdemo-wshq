@@ -1,0 +1,3 @@
+[submodule "whdemo"]
+	path = whdemo
+	url = https://github.com/IRISMeister/whdemo.git
