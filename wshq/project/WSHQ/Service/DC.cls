@@ -46,9 +46,8 @@ Method ReceiveInboundOrder(req As WSHQ.WS.InboundOrderContainer) As %Status [ We
 		#;Operationへの送信でエラーが発生した場合、次回の受信時にあわせて再実行されるのでここでは何もしない。
 		#;Operation上で送信エラーやクラッシュが発生した場合も、DBはロールバックされるので、次回の受信時にあわせて再送信される。
 		#;こういう「キーだけ渡し」はトレース上は見通しがあまりよくないが、実装例としてこのままにしておく。
-		#;Set tSC=..SendRequestSync("MAKER",SendReq,.response) 	//メーカに発注情報を送信
-		Set tSC=..SendRequestSync("MAKERR",SendReq,.response) 	//メーカに発注情報を送信
-		Set tSC=..SendRequestSync("WSDCRouter",SendReq,.response)  		//入荷予定をWSDCに送信
+		Set tSC=..SendRequestSync("MAKER",SendReq,.response) 		//メーカに発注情報を送信
+		Set tSC=..SendRequestSync("WSDCRouter",SendReq,.response)	//入荷予定をWSDCに送信
 		
 
 	}

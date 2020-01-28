@@ -5,6 +5,7 @@ version: '3.7'
 #
 services:
   wshq:
+    image: dpmeister/irisdemo:wshq
     build:
       context: ./wshq
       args:
