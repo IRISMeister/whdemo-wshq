@@ -13,7 +13,10 @@ XData ProductionDefinition
     <Setting Target="Adapter" Name="CallInterval">15</Setting>
     <Setting Target="Host" Name="AlertOnError">1</Setting>
   </Item>
-  <Item Name="WSHQ.Service.DC" Category="" ClassName="WSHQ.Service.DC" PoolSize="0" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
+  <Item Name="DCIn" Category="" ClassName="WSHQ.Service.DCIn" PoolSize="0" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
+    <Setting Target="Host" Name="AlertOnError">1</Setting>
+  </Item>
+  <Item Name="DCRecv" Category="" ClassName="WSHQ.Service.DCRecv" PoolSize="0" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
     <Setting Target="Host" Name="AlertOnError">1</Setting>
   </Item>
   <Item Name="InitiateInboundOrderProcess" Category="" ClassName="WSHQ.Service.InitiateInboundOrder" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
@@ -27,23 +30,22 @@ XData ProductionDefinition
     <Setting Target="Host" Name="StorageNamespace">WSHQ</Setting>
   </Item>
   <Item Name="WSDC1" Category="" ClassName="WSHQ.Operation.WSDC" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
-    <Setting Target="Adapter" Name="WebServiceURL">http://wsdc1:52773/csp/wsdc/WSDC.Service.HQ.cls</Setting>
-    <Setting Target="Adapter" Name="WebServiceClientClass">WSDC.HQ.WSDC.HQSoap</Setting>
-    <Setting Target="Host" Name="ArchiveIO">0</Setting>
-    <Setting Target="Adapter" Name="SOAPCredentials">default</Setting>
-    <Setting Target="Host" Name="AlertOnError">1</Setting>
+    <Setting Target="Adapter" Name="URL">/csp/wsdc/dispatcher/Receive</Setting>
+    <Setting Target="Adapter" Name="HTTPPort">52773</Setting>
+    <Setting Target="Adapter" Name="HTTPServer">wsdc1</Setting>
+    <Setting Target="Adapter" Name="Credentials">default</Setting>
   </Item>
   <Item Name="WSDC2" Category="" ClassName="WSHQ.Operation.WSDC" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
-    <Setting Target="Adapter" Name="WebServiceURL">http://wsdc2:52773/csp/wsdc/WSDC.Service.HQ.cls</Setting>
-    <Setting Target="Adapter" Name="WebServiceClientClass">WSDC.HQ.WSDC.HQSoap</Setting>
-    <Setting Target="Host" Name="ArchiveIO">0</Setting>
-    <Setting Target="Adapter" Name="SOAPCredentials">default</Setting>
-    <Setting Target="Host" Name="AlertOnError">1</Setting>
+    <Setting Target="Adapter" Name="URL">/csp/wsdc/dispatcher/Receive</Setting>
+    <Setting Target="Adapter" Name="HTTPPort">52773</Setting>
+    <Setting Target="Adapter" Name="HTTPServer">wsdc2</Setting>
+    <Setting Target="Adapter" Name="Credentials">default</Setting>
   </Item>
   <Item Name="MAKER" Category="" ClassName="WSHQ.Operation.MAKER" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
-    <Setting Target="Adapter" Name="WebServiceURL">http://maker:52773/csp/maker/MAKER.Service.HQ.cls</Setting>
-    <Setting Target="Adapter" Name="WebServiceClientClass">MAKER.HQ.MAKER.HQSoap</Setting>
-    <Setting Target="Adapter" Name="SOAPCredentials">default</Setting>
+    <Setting Target="Adapter" Name="HTTPPort">52773</Setting>
+    <Setting Target="Adapter" Name="HTTPServer">maker</Setting>
+    <Setting Target="Adapter" Name="URL">/csp/maker/dispatcher/ReceivePurchaseOrder</Setting>
+    <Setting Target="Adapter" Name="Credentials">default</Setting>
     <Setting Target="Host" Name="AlertOnError">1</Setting>
   </Item>
   <Item Name="WSDCRouter" Category="" ClassName="EnsLib.MsgRouter.RoutingEngine" PoolSize="2" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
@@ -68,12 +70,6 @@ XData ProductionDefinition
     <Setting Target="Adapter" Name="From">ensemble-production@localdomain.localhost</Setting>
     <Setting Target="Adapter" Name="Recipient">reciveall@localdomain.localhost</Setting>
     <Setting Target="Host" Name="IncludeManagedAlertHistory">2</Setting>
-  </Item>
-  <Item Name="MAKERR" Category="" ClassName="WSHQ.Operation.MAKERR" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
-    <Setting Target="Adapter" Name="HTTPPort">52773</Setting>
-    <Setting Target="Adapter" Name="HTTPServer">maker</Setting>
-    <Setting Target="Adapter" Name="URL">/csp/maker/dispatcher/ReceivePurchaseOrder</Setting>
-    <Setting Target="Adapter" Name="Credentials">default</Setting>
   </Item>
 </Production>
 }

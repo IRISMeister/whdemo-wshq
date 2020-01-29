@@ -3,9 +3,7 @@ Include CommonInc
 Class WSHQ.Operation.WSDC Extends Ens.BusinessOperation
 {
 
-Parameter ADAPTER = "EnsLib.SOAP.OutboundAdapter";
-
-Property Adapter As EnsLib.SOAP.OutboundAdapter;
+Parameter ADAPTER = "EnsLib.HTTP.OutboundAdapter";
 
 Parameter INVOCATION = "Queue";
 
@@ -14,9 +12,7 @@ Parameter INVOCATION = "Queue";
 /// ただし、倉庫には本日入荷予定分のみ
 Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As WSHQ.Res.SendInboundOrder) As %Status
 {
-
 	Set tSC=$$$OK
-
 	Try {
 		Set st=$ZH
 		Set pResponse=##class(WSHQ.Res.SendInboundOrder).%New()
@@ -27,7 +23,7 @@ Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As
 		For i=1:1:1 {		
 			Set stmt(i)=##class(%SQL.Statement).%New()
 			Set tSC=stmt(i).%Prepare(sql(i))
-			If $$$ISERR(tSC) { Throw ##class(%Exception.StatusException).CreateFromStatus(tSC) }
+			$$$ThrowOnError(tSC)
 		}
 
 		Set SendCount=0
@@ -41,48 +37,53 @@ Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As
 
 		Set rs0=##class(%SQL.Statement).%ExecDirect(,"START TRANSACTION")
 
-		Set container=##class(WSDC.HQ.ReceivingOrderContainer).%New()
+		Set container={}
+		Set container.Count=0
+		Set container.Messages=[]
 		Do {
-			w rs.オーダ番号,!
-			Set order=##class(WSDC.HQ.ReceivingOrder).%New()
-			Set order."オーダ番号"=rs.オーダ番号
-			Set order."オーダ日付"=rs."オーダ日付"
-			Set order."配送予定日付"=rs."配送予定日付"
-			Set order."商品コード"=rs."商品コード"
-			Set order."数量"=rs."数量"
+			Set container.Count=container.Count+1
+			Set order={}
+			Set order.オーダ番号=rs.オーダ番号
+			Set order.オーダ日付=rs.オーダ日付
+			Set order.配送予定日付=rs.配送予定日付
+			Set order.商品コード=rs.商品コード
+			Set order.数量=rs.数量
 			Set id=rs.ID
-			Do container.Messages.Insert(order)
+			Do container.Messages.%Push(order)
 			
 			$$$SQLPREUPD(rs(1),stmt(1),$$$SQLARGS(id))
 
 		} While (rs.%Next()) 
 
-		If container.Messages.Count()>0 {
-			Set tSC=..Adapter.InvokeMethod("ReceiveInbound",.WSResult,container)
+		If container.Count>0 {
+			Set httpreq=##class(%Net.HttpRequest).%New()
+			Set httpreq.ContentType="application/json; charset=UTF-8"
+			Set tempurl=..Adapter.URL,..Adapter.URL=..Adapter.URL_"/IN"
+			Set tSC=..Adapter.SendFormData(.HttpResponse,"POST",httpreq,,container.%ToJSON())
+			Set ..Adapter.URL=tempurl
 			If $$$ISERR(tSC) {
-				#; throw
 				Throw ##class(%Exception.StatusException).CreateFromStatus(tSC)
 			}
-			
+			Set WSResult={}.%FromJSON(HttpResponse.Data)
+
 			#;送信エラーの際には、sql2実行内容をロールバックしてしまう。=> 次回の再送対象になる。
-			If $$$ISERR(WSResult) {
-				$$$LOGERROR("WSDCへの入荷予定情報の送信に失敗:"_$SYSTEM.Status.GetErrorText(WSResult))
+			If $ISOBJECT(WSResult) {
+				$$$ThrowOnError(WSResult.Status)
+				#;If $$$ISERR(WSResult.Status) { 
+				#;	Throw ##class(%Exception.StatusException).CreateFromStatus(WSResult.Status)
+				#;}
 			}
 		}
 
 		k rs
 		Set rs0=##class(%SQL.Statement).%ExecDirect(,"COMMIT")
 
-		Set SendCount=container.Messages.Count()
+		Set SendCount=container.Count
 		Set pResponse.Status="OK"
 
 	}
 	 Catch e {
-		#;掛け捨てのロールバック
-		Set rs=##class(%SQL.Statement).%ExecDirect(,"ROLLBACK")
-		Do e.Log()
-		Set tSC = e.AsStatus()
-		$$$LOGERROR($SYSTEM.Status.GetErrorText(tSC))
+		 $$$CATCH(e)
 	 }
 	Set en=$ZH
 	If SendCount>0 { $$$LOGINFO("入荷情報送信:"_SendCount_"件送信 経過(秒):"_(en-st)) }
@@ -96,7 +97,6 @@ Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As
 Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse As WSHQ.Res.SendOutboundOrder) As %Status
 {
 	Set tSC=$$$OK
-
 	Try {
 		Set st=$ZH
 		#;蓄積された販売情報を倉庫に送信する。
@@ -108,7 +108,7 @@ Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse 
 		For i=1:1:1 {		
 			Set stmt(i)=##class(%SQL.Statement).%New()
 			Set tSC=stmt(i).%Prepare(sql(i))
-			If $$$ISERR(tSC) { Throw ##class(%Exception.StatusException).CreateFromStatus(tSC) }
+			$$$ThrowOnError(tSC)
 		}
 
 		Set SendCount=0
@@ -122,42 +122,49 @@ Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse 
 
 		Set rs0=##class(%SQL.Statement).%ExecDirect(,"START TRANSACTION")
 		
-		Set container=##class(WSDC.HQ.ShippingOrderContainer).%New()
+		Set container={}
+		Set container.Count=0
+		Set container.Messages=[]
 		Do {
-			w rs.オーダ番号,!
-			Set order=##class(WSDC.HQ.ShippingOrder).%New()
-			Set order."オーダ番号"=rs.オーダ番号
-			Set order."出荷番号"=rs.出荷番号
-			Set order."オーダ日付"=rs."オーダ日付"
-			Set order."商品コード"=rs."商品コード"
-			Set order."数量"=rs."数量"
+			Set container.Count=container.Count+1
+			Set order={}
+			Set order.オーダ番号=rs.オーダ番号
+			Set order.出荷番号=rs.出荷番号
+			Set order.オーダ日付=rs.オーダ日付
+			Set order.商品コード=rs.商品コード
+			Set order.数量=rs.数量
 			Set order.出荷予定日付=rs.出荷予定日付
 			Set order.出荷先コード=rs.出荷先コード
 			Set id=rs.ID
-			Do container.Messages.Insert(order)
+			Do container.Messages.%Push(order)
 
 			$$$SQLPREUPD(rs(1),stmt(1),$$$SQLARGS(id))
 
 		} While (rs.%Next()) 
 
-		Set tSC=..Adapter.InvokeMethod("ReceiveOutbound",.WSResult,container)
-		If $$$ISERR(tSC) {
-			#; throw
-			Throw ##class(%Exception.StatusException).CreateFromStatus(tSC)
+		Set httpreq=##class(%Net.HttpRequest).%New()
+		Set httpreq.ContentType="application/json; charset=UTF-8"
+		Set tempurl=..Adapter.URL,..Adapter.URL=..Adapter.URL_"/OUT"
+		Set tSC=..Adapter.SendFormData(.HttpResponse,"POST",httpreq,,container.%ToJSON())
+		Set ..Adapter.URL=tempurl
+		$$$ThrowOnError(tSC)
+		Set WSResult={}.%FromJSON(HttpResponse.Data)
+		If $ISOBJECT(WSResult) {
+			$$$ThrowOnError(WSResult.Status)
+			#;If $$$ISERR(WSResult.Status) { 
+			#;	Throw ##class(%Exception.StatusException).CreateFromStatus(WSResult.Status)
+			#;}
 		}
+
 		k rs
 		Set rs0=##class(%SQL.Statement).%ExecDirect(,"COMMIT")
 
-		Set SendCount=container.Messages.Count()
+		Set SendCount=container.Count
 		Set pResponse.Status="OK"
 
 	}
 	 Catch e {
-		#;掛け捨てのロールバック
-		Set rs=##class(%SQL.Statement).%ExecDirect(,"ROLLBACK")
-		Do e.Log()
-		Set tSC = e.AsStatus()
-		$$$LOGERROR($SYSTEM.Status.GetErrorText(tSC))
+		 $$$CATCH(e)
 	 }
 	Set en=$ZH,elapsed=en-st
 	if elapsed>10 {
