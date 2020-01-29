@@ -41,8 +41,6 @@ XData setup [ XMLNamespace = INSTALLER ]
 	</Invoke>
 
 	<Production Name="${ProductionName}" AutoStart="1">
-	<Setting  name="" Item="WSDC1" Target="Adapter" Setting="HTTPServer" Value="wsdc1" />
-	<Setting  name="" Item="WSDC2" Target="Adapter" Setting="HTTPServer" Value="wsdc2" />
 	</Production>
 </Namespace>
 

@@ -11,7 +11,7 @@ Parameter NAMESPACE = "http://tempuri.org";
 
 Parameter USECLASSNAMESPACES = 1;
 
-ClassMethod ClearAll() [ WebMethod ]
+ClassMethod ClearAll() As %Status [ WebMethod ]
 {
 	Do ##class(WSHQ.Util).ClearAll()
 	Do ##class(Ens.Purge).PurgeAll(.tDeletedCount,0,0,1)
@@ -19,6 +19,7 @@ ClassMethod ClearAll() [ WebMethod ]
 	
 	Do ##class(Ens.Activity.Utils).Purge("0s",,.c)
 	Do ##class(Ens.Activity.Utils).Purge("0d",,.c)
+	Return $$$OK
 }
 
 ClassMethod StartProduction() As %Status [ WebMethod ]
