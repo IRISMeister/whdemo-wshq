@@ -109,7 +109,7 @@ Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse 
 
 		Set SendCount=0
 				
-		Set rs=##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+		Do ##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
 
 		Set sql="SELECT * FROM WSHQ_Data.OutboundOrder WHERE 出荷予定日付=? and DC配信済み=0"
 		Set today=##class(Common.Util).GetToday() 
