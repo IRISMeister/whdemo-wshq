@@ -51,7 +51,7 @@ Method OnProcessInput(pInput As %RegisteredObject, pOutput As %RegisteredObject)
 
 	}
 	Catch e {
-		$$$CATCH(e)
+		$$$CATCH(e,tSC)
 	}
 	Set resultContainer.Status=tSC
 	Do resultContainer.%ToJSON()

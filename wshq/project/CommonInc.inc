@@ -13,10 +13,11 @@ ROUTINE CommonInc [Type=INC]
 
 #define THROWIFERROR(%x) If $$$ISERR(%x) { Throw ##class(%Exception.StatusException).CreateFromStatus(%x) } 
 
-#define CATCH(%x) Set rs=##class(%SQL.Statement).%ExecDirect(,"ROLLBACK") ##continue 
- Do %x.Log() Set tSC = %x.AsStatus() Do %x.StackAsArray(.errs) ##continue 
- Set zzplace="" if e.%IsA("%Exception.SQL") { Do e.StackAsArray(.zzerrs) Set zzplace="/"_zzerrs(zzerrs-1,"PLACE") } ##continue
- $$$LOGERROR($SYSTEM.Status.GetErrorText(tSC)_zzplace)
+ // !!! It sets and kills zzplace,zzerrs,zzi variables !!!
+#define CATCH(%x,%y) Do ##class(%SQL.Statement).%ExecDirect(,"ROLLBACK") ##continue 
+ Do %x.Log() Set zzplace="" Set %y=%x.AsStatus() ##continue 
+ if '%x.%IsA("SystemException"){ Do %x.StackAsArray(.zzerrs) f zzi=1:1:zzerrs { Set zzplace=zzerrs(zzi,"PLACE")_"/"_zzplace} Set zzplace=$C(13,10)_"Stack:"_zzplace  } ##continue
+ $$$LOGERROR($SYSTEM.Status.GetErrorText(%y)_zzplace) k zzplace,zzerrs,zzi
 
  //#define DEBUG
 

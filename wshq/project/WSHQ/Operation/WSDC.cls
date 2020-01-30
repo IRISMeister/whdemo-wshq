@@ -28,14 +28,14 @@ Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As
 
 		Set SendCount=0
 
-		Set rs=##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+		Do ##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
 
 		Set today=##class(Common.Util).GetToday() 
 		Set sql="SELECT * FROM WSHQ_Data.InboundOrder WHERE 配送予定日付<=? and DC配信済み=0 and メーカ配信済み=1 and DCコード=?"
 		$$$SQLDIRECTQUERY(rs,sql,$$$SQLARGS(today,DCコード))
 		If rs.%SQLCODE=100 Quit
 
-		Set rs0=##class(%SQL.Statement).%ExecDirect(,"START TRANSACTION")
+		Do ##class(%SQL.Statement).%ExecDirect(,"START TRANSACTION")
 
 		Set container={}
 		Set container.Count=0
@@ -54,6 +54,7 @@ Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As
 			$$$SQLPREUPD(rs(1),stmt(1),$$$SQLARGS(id))
 
 		} While (rs.%Next()) 
+		k rs
 
 		If container.Count>0 {
 			Set httpreq=##class(%Net.HttpRequest).%New()
@@ -66,30 +67,25 @@ Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As
 			}
 			Set WSResult={}.%FromJSON(HttpResponse.Data)
 
-			#;送信エラーの際には、sql2実行内容をロールバックしてしまう。=> 次回の再送対象になる。
+			#;送信エラーの際には、sql実行内容をロールバックしてしまう。=> 次回の再送対象になる。
 			If $ISOBJECT(WSResult) {
 				$$$ThrowOnError(WSResult.Status)
-				#;If $$$ISERR(WSResult.Status) { 
-				#;	Throw ##class(%Exception.StatusException).CreateFromStatus(WSResult.Status)
-				#;}
 			}
 		}
 
-		k rs
-		Set rs0=##class(%SQL.Statement).%ExecDirect(,"COMMIT")
+		Do ##class(%SQL.Statement).%ExecDirect(,"COMMIT")
 
 		Set SendCount=container.Count
 		Set pResponse.Status="OK"
 
 	}
 	 Catch e {
-		 $$$CATCH(e)
+		 $$$CATCH(e,tSC)
 	 }
 	Set en=$ZH
 	If SendCount>0 { $$$LOGINFO("入荷情報送信:"_SendCount_"件送信 経過(秒):"_(en-st)) }
 
-	k rs
-	Set rs=##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
+	Do ##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
 	Return tSC
 }
 
@@ -120,7 +116,7 @@ Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse 
 		$$$SQLDIRECTQUERY(rs,sql,$$$SQLARGS(today))
 		If rs.%SQLCODE=100 Quit
 
-		Set rs0=##class(%SQL.Statement).%ExecDirect(,"START TRANSACTION")
+		Do ##class(%SQL.Statement).%ExecDirect(,"START TRANSACTION")
 		
 		Set container={}
 		Set container.Count=0
@@ -141,6 +137,7 @@ Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse 
 			$$$SQLPREUPD(rs(1),stmt(1),$$$SQLARGS(id))
 
 		} While (rs.%Next()) 
+		k rs
 
 		Set httpreq=##class(%Net.HttpRequest).%New()
 		Set httpreq.ContentType="application/json; charset=UTF-8"
@@ -151,20 +148,15 @@ Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse 
 		Set WSResult={}.%FromJSON(HttpResponse.Data)
 		If $ISOBJECT(WSResult) {
 			$$$ThrowOnError(WSResult.Status)
-			#;If $$$ISERR(WSResult.Status) { 
-			#;	Throw ##class(%Exception.StatusException).CreateFromStatus(WSResult.Status)
-			#;}
 		}
 
-		k rs
-		Set rs0=##class(%SQL.Statement).%ExecDirect(,"COMMIT")
+		Do ##class(%SQL.Statement).%ExecDirect(,"COMMIT")
 
 		Set SendCount=container.Count
 		Set pResponse.Status="OK"
-
 	}
 	 Catch e {
-		 $$$CATCH(e)
+		 $$$CATCH(e,tSC)
 	 }
 	Set en=$ZH,elapsed=en-st
 	if elapsed>10 {
@@ -173,9 +165,8 @@ Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse 
 	Else {
 		$$$LOGINFO("販売情報送信 :"_SendCount_"件送信 経過(秒):"_(elapsed))
 	}
-	k rs
-	Set rs=##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
-	$$$DSQLERRCHECK(rs)
+
+	Do ##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
 	Return tSC
 }
 

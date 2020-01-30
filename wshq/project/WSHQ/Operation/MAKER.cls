@@ -27,7 +27,7 @@ Method Exec(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As Ens.Respo
 			$$$ThrowOnError(tSC)
 		}
 
-		Set rs=##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+		Do ##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
 		Set DCコード=pRequest.DestWSDC
 		Set today=##class(Common.Util).GetToday() 
 		#;この時点では配送予定日付は空なので条件として使えない
@@ -59,7 +59,7 @@ Method Exec(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As Ens.Respo
 	 			If rs(2).%SQLCODE'=0 Throw ##class(%Exception.SQL).CreateFromSQLCODE(rs(2).SQLCODE,rs(2).%Message)
  			}
 		} While (rs.%Next()) 
-
+		k rs
 
 		#; ContentTypeをapplication/json,utf8にしたい。
 		#;Set tSC=..Adapter.Post(.HttpResponse,,container.%ToJSON())
@@ -82,19 +82,17 @@ Method Exec(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As Ens.Respo
 			}
 
 		}
-		k rs
-		Set rs0=##class(%SQL.Statement).%ExecDirect(,"COMMIT")
+		Do ##class(%SQL.Statement).%ExecDirect(,"COMMIT")
 
 		Set en=$ZH
 		$$$LOGINFO("本日入荷件数/総件数:"_cnt_"/"_container.Count_" 経過(秒):"_(en-st))
 
 	}
 	 Catch e {
-		 $$$CATCH(e)
+		 $$$CATCH(e,tSC)
 	}
 
-	k rs
-	Set rs=##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
+	Do ##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
 	Return tSC
 }
 

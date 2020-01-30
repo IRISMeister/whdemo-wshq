@@ -39,14 +39,10 @@ Method Exec(wsdc As %String) As %Status
 		Set req.DestWSDC=wsdc
 		Set tSC=..SendRequestSync("WSDCRouter",req,.response)
 		$$$THROWIFERROR(tSC)
-	 }
-	 Catch e {
-		#;掛け捨てのロールバック
-		Set rs0=##class(%SQL.Statement).%ExecDirect(,"ROLLBACK")
-		Do e.Log()
-		Set tSC = e.AsStatus()
-		$$$LOGERROR($SYSTEM.Status.GetErrorText(tSC))
-	 }
+	}
+	Catch e {
+		$$$CATCH(e,tSC)
+	}
 	 
 	 Return tSC
 }
@@ -151,15 +147,11 @@ ClassMethod CreateOutboundOrder(wsdc As %String) As %Status
 			
 		}
 	}
-	 Catch e {
-		#;掛け捨てのロールバック
-		Set rs0=##class(%SQL.Statement).%ExecDirect(,"ROLLBACK")
-		Do e.Log()
-		Set tSC = e.AsStatus()
-		$$$LOGERROR($SYSTEM.Status.GetErrorText(tSC))
-	 }
+	Catch e {
+		$$$CATCH(e,tSC)
+	}
 	 
-	 Return tSC
+	Return tSC
 }
 
 ClassMethod StoreShortageInfo(商品コード, 実在庫数, 発注数) As %Status
@@ -188,15 +180,11 @@ ClassMethod StoreShortageInfo(商品コード, 実在庫数, 発注数) As %Stat
 		$$$SQLPREUPD(rs(3),stmt(3),$$$SQLARGS(商品コード))
 
 	}
-	 Catch e {
-		#;掛け捨てのロールバック
-		Set rs0=##class(%SQL.Statement).%ExecDirect(,"ROLLBACK")
-		Do e.Log()
-		Set tSC = e.AsStatus()
-		$$$LOGERROR($SYSTEM.Status.GetErrorText(tSC))
-	 }
+	Catch e {
+		$$$CATCH(e,tSC)
+	}
 	 
-	 Return tSC
+	Return tSC
 }
 
 ClassMethod ResendPendingOutboundOrder(wsdc As %String) As %Status
@@ -255,15 +243,11 @@ ClassMethod ResendPendingOutboundOrder(wsdc As %String) As %Status
 
 		} While (rs.%Next())
 	}
-	 Catch e {
-		#;掛け捨てのロールバック
-		Set rs0=##class(%SQL.Statement).%ExecDirect(,"ROLLBACK")
-		Do e.Log()
-		Set tSC = e.AsStatus()
-		$$$LOGERROR($SYSTEM.Status.GetErrorText(tSC))
-	 }
+	Catch e {
+		$$$CATCH(e,tSC)
+	}
 	 
-	 Return tSC
+	Return tSC
 }
 
 }

@@ -13,7 +13,7 @@ XData setup [ XMLNamespace = INSTALLER ]
 	<Configuration>
 	<Database Name="WSHQ" Create="overwrite" Dir="${DataBaseDir}WSHQ" InitialSize="1"/>
 	</Configuration>
-	<Invoke Class="%SYSTEM.OBJ" Method="ImportDir">
+	<Invoke Class="%SYSTEM.OBJ" Method="ImportDir" CheckStatus="true">
 		<Arg Value="${SRCDIR}" />
 		<Arg Value="" />
 		<Arg Value="ck" />
@@ -63,8 +63,7 @@ ClassMethod setup(ByRef tVars) As %Status
 
 		If '$D(tVars("appuserpwd")) { Set tVars("appuserpwd")="sys" }
 		If '$D(tVars("SRCDIR")) { Set tVars("SRCDIR")="/home/irisowner/src" }
-
-  	  	Set tSC=..setupMethod(.tVars)
+		$$$THROWONERROR(tSC,..setupMethod(.tVars))
 
 		Set oldns=$NAMESPACE
 		New $NAMESPACE   ; just in case
