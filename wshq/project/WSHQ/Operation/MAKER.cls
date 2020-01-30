@@ -33,7 +33,7 @@ Method Exec(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As Ens.Respo
 		#;この時点では配送予定日付は空なので条件として使えない
 		Set sql="SELECT * FROM WSHQ_Data.InboundOrder WHERE オーダ日付<=? AND メーカ配信済み=0 and DCコード=?"
 		$$$SQLDIRECTQUERY(rs,sql,$$$SQLARGS(today,DCコード))
-		If rs.%SQLCODE=100 Quit
+		If rs.%SQLCODE=100 { Quit }
 
 		Set rs0=##class(%SQL.Statement).%ExecDirect(,"START TRANSACTION")
 		Set container={}
