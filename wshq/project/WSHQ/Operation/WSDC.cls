@@ -7,18 +7,15 @@ Parameter ADAPTER = "EnsLib.HTTP.OutboundAdapter";
 
 Parameter INVOCATION = "Queue";
 
-/// 入荷(仕入)情報を倉庫に送信
-/// 蓄積された入荷予定レコードを倉庫に送信する。
-/// ただし、倉庫には本日入荷予定分のみ
+/// 蓄積された入荷(仕入)予定レコードのうち、本日入荷予定分のものを倉庫に送信する。
 Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As WSHQ.Res.SendInboundOrder) As %Status
 {
 	Set tSC=$$$OK
+	Set SendCount=0
+
 	Try {
 		Set st=$ZH
-		Set pResponse=##class(WSHQ.Res.SendInboundOrder).%New()
-		Set DCコード=pRequest.DestWSDC
-		Set pResponse.DestWSDC=DCコード
-		#;倉庫送信
+
 		Set sql(1)="Update WSHQ_Data.InboundOrder Set DC配信済み=1 WHERE ID=?"
 		For i=1:1:1 {		
 			Set stmt(i)=##class(%SQL.Statement).%New()
@@ -26,7 +23,9 @@ Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As
 			$$$ThrowOnError(tSC)
 		}
 
-		Set SendCount=0
+		Set pResponse=##class(WSHQ.Res.SendInboundOrder).%New()
+		Set DCコード=pRequest.DestWSDC
+		Set pResponse.DestWSDC=DCコード
 
 		Do ##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
 
@@ -93,6 +92,8 @@ Method DoInboundOrder(pRequest As WSHQ.Req.SendInboundOrder, Output pResponse As
 Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse As WSHQ.Res.SendOutboundOrder) As %Status
 {
 	Set tSC=$$$OK
+	Set SendCount=0
+				
 	Try {
 		Set st=$ZH
 		#;蓄積された販売情報を倉庫に送信する。
@@ -107,8 +108,6 @@ Method DoOutboundOrder(pRequest As WSHQ.Req.SendOutboundOrder, Output pResponse 
 			$$$ThrowOnError(tSC)
 		}
 
-		Set SendCount=0
-				
 		Do ##class(%SQL.Statement).%ExecDirect(,"SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
 
 		Set sql="SELECT * FROM WSHQ_Data.OutboundOrder WHERE 出荷予定日付=? and DC配信済み=0"

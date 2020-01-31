@@ -198,7 +198,6 @@ ClassMethod ResendPendingOutboundOrder(wsdc As %String) As %Status
 		Set sql(5)="DELETE FROM WSHQ_Data.Shortage WHERE 商品コード=?"
 		Set sql(6)="DELETE FROM WSHQ_Data.OutboundOrder where ID=?"
 		
-
 		For i=1:1:6 {
 			Set stmt(i)=##class(%SQL.Statement).%New()
 			Set tSC=stmt(i).%Prepare(sql(i))

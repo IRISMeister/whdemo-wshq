@@ -3,8 +3,8 @@ Include CommonInc
 Class WSHQ.Service.DCIn Extends Ens.BusinessService
 {
 
-/// 発注オーダを倉庫から受信し、その要求を(1)メーカに送信 (2)本日入荷出来る分があれば、倉庫にも送信
-/// 発注オーダを受信
+/// WSHQ.REST.Dispatcher(REST Dispatcher)からコールされる。
+/// 発注オーダを倉庫(WSDC)から受信し、その要求を(1)メーカに送信 (2)本日入荷出来る分があれば、倉庫にも送信
 Method OnProcessInput(pInput As %RegisteredObject, pOutput As %RegisteredObject) As %Status
 {
 	Set %response.ContentType="application/json"
@@ -16,13 +16,15 @@ Method OnProcessInput(pInput As %RegisteredObject, pOutput As %RegisteredObject)
 	Set resultContainer.Count=0
 	Try {
 		Set st=$ZH
-		Set req={}.%FromJSON(%request.Content)
 		Set sql(1)="INSERT INTO WSHQ_Data.InboundOrder (DCコード,オーダ番号,オーダ日付,商品コード,数量) VALUES (?,?,?,?,?)"
 		Set stmt(1)=##class(%SQL.Statement).%New()
 		Set tSC=stmt(1).%Prepare(sql(1))
 		$$$ThrowOnError(tSC)
 		
-		Set rs=##class(%SQL.Statement).%ExecDirect(,"START TRANSACTION")
+		#;発注オーダを取得
+		Set req={}.%FromJSON(%request.Content)
+
+		Do ##class(%SQL.Statement).%ExecDirect(,"START TRANSACTION")
 
 		Set DCコード=req.WSDCName
 		Set index=req.Count-1
@@ -35,19 +37,19 @@ Method OnProcessInput(pInput As %RegisteredObject, pOutput As %RegisteredObject)
 			$$$SQLPREUPD(rs(1),stmt(1),$$$SQLARGS(DCコード,オーダ番号,オーダ日付,商品コード,数量))
 		}
 
-		Set rs=##class(%SQL.Statement).%ExecDirect(,"COMMIT")
+		Do ##class(%SQL.Statement).%ExecDirect(,"COMMIT")
+
 		Set en=$ZH
 		$$$LOGINFO("WSDCから発注オーダを受信:"_req.Count_"件 経過(秒):"_(en-st))
 
 		Set SendReq=##class(WSHQ.Req.SendInboundOrder).%New()
-		Set SendReq.DestWSDC=req.WSDCName  ;"WSDC1" ;ここはreqや送信元のサービス名などから取得すべき
+		Set SendReq.DestWSDC=req.WSDCName  ;"WSDC1"
 		
-		#;Operationへの送信でエラーが発生した場合、次回の受信時にあわせて再実行されるのでここでは何もしない。
-		#;Operation上で送信エラーやクラッシュが発生した場合も、DBはロールバックされるので、次回の受信時にあわせて再送信される。
-		#;こういう「キーだけ渡し」はトレース上は見通しがあまりよくないが、実装例としてこのままにしておく。
+		#;メーカへの発注情報作成・送信は、"MAKER" Operationで実施。ここはトリガを送信しているに過ぎない。
+		#;"MAKER" Operationへの送信でエラーが発生しても、次回に再実行されるのでここでは何もしない。
+		#;"MAKER" Operation上で送信エラーやクラッシュが発生した場合も、"MAKER"内でDBがロールバックされる(未処理状態に戻る)ので、やはり次回に再処理される。
 		Set tSC=..SendRequestSync("MAKER",SendReq,.response) 		//メーカに発注情報を送信
 		Set tSC=..SendRequestSync("WSDCRouter",SendReq,.response)	//入荷予定をWSDCに送信
-		
 
 	}
 	Catch e {
